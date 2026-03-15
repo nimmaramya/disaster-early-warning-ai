@@ -3,7 +3,13 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 
 # Load CNN model
-model = load_model("models/final_cnn_3class_model.keras", compile=False)
+
+
+model = load_model(
+    "models/final_cnn_3class_model.keras",
+    compile=False,
+    safe_mode=False
+)
 
 
 def predict_cnn_risk(img_path):
