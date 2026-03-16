@@ -50,7 +50,7 @@ def disaster_keyword_score(text):
 
     for word in DISASTER_KEYWORDS:
         if word in text:
-            score += 1
+            score += 2
 
     return score
 

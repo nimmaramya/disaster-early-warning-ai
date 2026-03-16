@@ -1,14 +1,13 @@
 import numpy as np
-from tensorflow.keras.models import load_model
+
 from tensorflow.keras.preprocessing import image
 
 # Load CNN model
-
+from tensorflow.keras.models import load_model
 
 model = load_model(
-    "models/final_cnn_3class_model.h5",
-    compile=False,
-    safe_mode=False
+    "models/final_cnn_3class_model.keras",
+    compile=False
 )
 
 
