@@ -1,55 +1,81 @@
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 
-model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+# download once (safe for deployment)
+try:
+    nltk.data.find('sentiment/vader_lexicon.zip')
+except:
+    nltk.download('vader_lexicon')
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSequenceClassification.from_pretrained(model_name)
+sia = SentimentIntensityAnalyzer()
 
-model.eval()
 
+# -------------------------------------------------
+# DISASTER KEYWORDS + WEIGHTS
+# -------------------------------------------------
+
+DISASTER_KEYWORDS = {
+    "flood": 0.4,
+    "flooding": 0.4,
+    "heavy rain": 0.35,
+    "heavy rainfall": 0.4,
+    "cyclone": 0.5,
+    "storm": 0.2,
+    "overflow": 0.3,
+    "waterlogging": 0.15,
+    "dam break": 0.3,
+    "landslide": 0.25,
+    "evacuation": 0.2,
+    "rescue": 0.15,
+    "disaster": 0.25,
+    "emergency": 0.4
+}
+
+
+# -------------------------------------------------
+# TEXT CLEANING
+# -------------------------------------------------
+
+def preprocess(text):
+    return text.lower().strip()
+
+
+# -------------------------------------------------
+# KEYWORD BOOST
+# -------------------------------------------------
+
+def keyword_boost(text):
+    boost = 0
+
+    for word, weight in DISASTER_KEYWORDS.items():
+        if word in text:
+            boost += weight
+
+    return min(boost, 0.6)  # cap boost
+
+
+# -------------------------------------------------
+# MAIN NLP RISK FUNCTION
+# -------------------------------------------------
 
 def predict_text_risk(text):
 
-    inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        padding=True,
-        max_length=128
-    )
+    text = preprocess(text)
 
-    with torch.no_grad():
-        outputs = model(**inputs)
+    # sentiment analysis
+    sentiment = sia.polarity_scores(text)
 
-    logits = outputs.logits
-    probabilities = torch.softmax(logits, dim=1)
+    negative = sentiment['neg']
+    compound = sentiment['compound']
 
-    # sentiment model output
-    negative = probabilities[0][0].item()
-    neutral = probabilities[0][1].item()
-    positive = probabilities[0][2].item()
+    # convert sentiment → disaster signal
+    # (compound ranges -1 to +1)
+    sentiment_score = max(0, -compound)  # only negative matters
 
-    # disasters correlate strongly with negative sentiment
-    disaster_score = negative
+    # keyword boost
+    boost = keyword_boost(text)
 
-    # boost disaster keywords
-    disaster_keywords = [
-        "flood", "flooding",
-        "heavy rainfall",
-        "cyclone",
-        "storm",
-        "overflow",
-        "waterlogging",
-        "dam break",
-        "landslide"
-    ]
+    # combine
+    risk_score = sentiment_score * 0.7 + boost
 
-    boost = 0
-    for word in disaster_keywords:
-        if word in text.lower():
-            boost += 0.15
-
-    risk_score = min(1.0, disaster_score + boost)
-
-    return float(risk_score)
+    return float(min(1.0, risk_score))
