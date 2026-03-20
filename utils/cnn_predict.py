@@ -1,8 +1,8 @@
 import numpy as np
-<<<<<<< HEAD
+
 import tensorflow
-=======
->>>>>>> 6544c7e762608cf229666cf5c76f123436cf8bb5
+
+
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.models import load_model
 import streamlit as st
