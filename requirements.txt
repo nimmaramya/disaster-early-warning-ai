@@ -11,3 +11,5 @@ streamlit-folium
 joblib
 feedparser
 nltk
+Pillow
+requests
